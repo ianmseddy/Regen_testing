@@ -8,12 +8,12 @@ if (tryCatch(packageVersion("SpaDES.project") < "0.1.1", error = function(x) TRU
 out <- SpaDES.project::setupProject(
   Restart = TRUE,
   updateRprofile = TRUE,
-  useGit = TRUE,
   paths = list(projectPath = getwd()),
   modules = c("PredictiveEcology/Biomass_borealDataPrep@main",
               "PredictiveEcology/Biomass_core@main",
-              "PredictiveEcology/Biomass_regeneration@main",
-              "PredictiveEcology/scfm@development"),
+              "PredictiveEcology/Biomass_regeneration@development",
+              "PredictiveEcology/scfm@development"
+              ),
               #note scfm is a series of modules on a single git repository
   params = list(
     .globals = list(
@@ -34,33 +34,30 @@ out <- SpaDES.project::setupProject(
   ),
   packages = c('RCurl', 'XML', 'snow', 'googledrive'),
   times = list(start = 2011, end = 2511),
+  useGit = TRUE
   #70 years of fire should be enough to evaluate MAAB
-  studyArea = {
-    targetCRS <- paste("+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0",
-                       "+datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
-    sa <- terra::vect(cbind(-1209980, 7586865), crs = targetCRS)
-    sa <- LandR::randomStudyArea(center = sa, size = 10000 * 250 * 30000, seed = 1002)
-    sa <- sf::st_as_sf(sa)
-  },
-  studyAreaLarge = {
-    sf::st_buffer(studyArea, 5000)
-  },
-  rasterToMatchLarge = {
-    rtml<- terra::rast(terra::ext(studyAreaLarge), res = c(250, 250))
-    terra::crs(rtml) <- terra::crs(studyAreaLarge)
-    rtml[] <- 1
-    rtml <- terra::mask(rtml, studyAreaLarge)
-  },
-  rasterToMatch = {
-    rtm <- terra::crop(rasterToMatchLarge, studyArea)
-    rtm <- terra::mask(rtm, studyArea)
-  },
-  sppEquiv = {
-    speciesInStudy <- LandR::speciesInStudyArea(studyAreaLarge)
-    species <- LandR::equivalentName(speciesInStudy$speciesList, df = LandR::sppEquivalencies_CA, "LandR")
-    sppEquiv <- LandR::sppEquivalencies_CA[LandR %in% species]
-    sppEquiv <- sppEquiv[KNN != "" & LANDIS_traits != ""] #avoid a bug with shore pine
-  }
+  # studyArea = {
+  #   prepInputs(url = "https://www.gisapplication.lrc.gov.on.ca/fmedatadownload/Packages/ECODISTR.zip")
+  # },
+  # studyAreaLarge = {
+  #   sf::st_buffer(studyArea, 5000)
+  # },
+  # rasterToMatchLarge = {
+  #   rtml<- terra::rast(terra::ext(studyAreaLarge), res = c(250, 250))
+  #   terra::crs(rtml) <- terra::crs(studyAreaLarge)
+  #   rtml[] <- 1
+  #   rtml <- terra::mask(rtml, studyAreaLarge)
+  # },
+  # rasterToMatch = {
+  #   rtm <- terra::crop(rasterToMatchLarge, studyArea)
+  #   rtm <- terra::mask(rtm, studyArea)
+  # },
+  # sppEquiv = {
+  #   speciesInStudy <- LandR::speciesInStudyArea(studyAreaLarge)
+  #   species <- LandR::equivalentName(speciesInStudy$speciesList, df = LandR::sppEquivalencies_CA, "LandR")
+  #   sppEquiv <- LandR::sppEquivalencies_CA[LandR %in% species]
+  #   sppEquiv <- sppEquiv[KNN != "" & LANDIS_traits != ""] #avoid a bug with shore pine
+  # }
 )
 
 outSim <- do.call(SpaDES.core::simInitAndSpades, out)

@@ -12,6 +12,7 @@ out <- SpaDES.project::setupProject(
   modules = c("PredictiveEcology/Biomass_borealDataPrep@development",
               "PredictiveEcology/Biomass_core@development",
               "PredictiveEcology/Biomass_regeneration@development",
+              "PredictiveEcology/Biomass_speciesParameters@manual",
               "PredictiveEcology/scfm@development"
               ),
               #note scfm is a series of modules on a single git repository
@@ -42,13 +43,19 @@ out <- SpaDES.project::setupProject(
     targetCRS <- paste("+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0",
                        "+datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
     ecod <- reproducible::prepInputs(url = "https://www.gisapplication.lrc.gov.on.ca/fmedatadownload/Packages/ECODISTR.zip",
-                                     destinationPath = "inputs")
-    ecod <- ecod[ecod$DIST_NAME == "Brent",]
+                                     destinationPath = 'inputs')
+    ecod <- ecod[ecod$DIST_NAME == "Hornepayne",]
     ecod <- sf::st_transform(ecod, targetCRS)
-    ecod
   },
   studyAreaLarge = {
     sf::st_buffer(studyArea, 2000)
+  },
+  sppEquiv = {
+    speciesInStudy <- LandR::speciesInStudyArea(studyAreaLarge,
+                                                dPath = "inputs")
+    species <- LandR::equivalentName(speciesInStudy$speciesList, df = LandR::sppEquivalencies_CA, "LandR")
+    sppEquiv <- LandR::sppEquivalencies_CA[LandR %in% species]
+    sppEquiv <- sppEquiv[KNN != "" & LANDIS_traits != ""] #avoid a bug with shore pine
   },
   rasterToMatchLarge = {
     rtml<- terra::rast(terra::ext(studyAreaLarge), res = c(250, 250))
@@ -60,18 +67,13 @@ out <- SpaDES.project::setupProject(
     rtm <- terra::crop(rasterToMatchLarge, studyArea)
     rtm <- terra::mask(rtm, studyArea)
     rtm
-  },
-  sppEquiv = {
-    speciesInStudy <- LandR::speciesInStudyArea(studyAreaLarge, dPath = "inputs")
-    species <- LandR::equivalentName(speciesInStudy$speciesList, df = LandR::sppEquivalencies_CA, "LandR")
-    sppEquiv <- LandR::sppEquivalencies_CA[LandR %in% species]
-    sppEquiv <- sppEquiv[KNN != "" & LANDIS_traits != ""] #avoid a bug with shore pine
   }
 )
 
 out$paths$modulePath <- c(file.path("modules"),
                           file.path("modules/scfm/modules"))
 out$modules <- c("Biomass_core", "Biomass_borealDataPrep", "Biomass_regeneration",
+                 "Biomass_speciesParameters",
                  "scfmLandcoverInit", "scfmRegime", "scfmDriver",
                  "scfmIgnition", "scfmEscape", "scfmSpread",
                  "scfmDiagnostics"

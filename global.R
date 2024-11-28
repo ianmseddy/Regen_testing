@@ -9,8 +9,8 @@ out <- SpaDES.project::setupProject(
   Restart = TRUE,
   updateRprofile = TRUE,
   paths = list(projectPath = getwd()),
-  modules = c("PredictiveEcology/Biomass_borealDataPrep@main",
-              "PredictiveEcology/Biomass_core@main",
+  modules = c("PredictiveEcology/Biomass_borealDataPrep@development",
+              "PredictiveEcology/Biomass_core@development",
               "PredictiveEcology/Biomass_regeneration@development",
               "PredictiveEcology/scfm@development"
               ),
@@ -24,23 +24,26 @@ out <- SpaDES.project::setupProject(
     ),
     scfmDriver = list(targetN = 1000, #default is 4000 - higher targetN adds time + precision
                       # targetN would ideally be minimum 2000 - mean fire size estimates will be bad with 1000
-                      .useParallelFireRegimePolys = TRUE), #assumes parallelization is an otpion
+                      .useParallelFireRegimePolys = TRUE), #assumes parallelization is an option
     scfmSpread = list(.plotInterval = 40),
     Biomass_core = list(.plotInterval = 10)
   ),
   options = list(#spades.allowInitDuringSimInit = TRUE,
     spades.allowSequentialCaching = TRUE,
     spades.moduleCodeChecks = FALSE,
-    spades.recoveryMode = 1
+    spades.recoveryMode = 1,
+    LandR.verbose = TRUE #for regen messages
   ),
   packages = c('RCurl', 'XML', 'snow', 'googledrive'),
   times = list(start = 2011, end = 2511),
   useGit = TRUE,
   #70 years of fire should be enough to evaluate MAAB
   studyArea = {
+    targetCRS <- paste("+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0",
+                       "+datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
     ecod <- reproducible::prepInputs(url = "https://www.gisapplication.lrc.gov.on.ca/fmedatadownload/Packages/ECODISTR.zip")
-    ecod <- ecod[ecod$DIST_NAME == "Hornepayne",]
-    ecod
+    ecod <- ecod[ecod$DIST_NAME == "St. Raphael Lake",]
+    ecod <- sf::st_transform(ecod, targetCRS)
   },
   studyAreaLarge = {
     sf::st_buffer(studyArea, 2000)
@@ -64,10 +67,12 @@ out <- SpaDES.project::setupProject(
   }
 )
 
-out$modules <- c("Biomass_core", "Biomass_borealDataPrep", "Biomass_speciesData",
-                file.path("modules/scfm", c("scfmLandcoverInit", "scfmRegime", "scfmDriver",
+out$paths$modulePath <- c(file.path("modules"),
+                          file.path("modules/scfm/modules"))
+out$modules <- c("Biomass_core", "Biomass_borealDataPrep", "Biomass_regeneration",
+                 "scfmLandcoverInit", "scfmRegime", "scfmDriver",
                  "scfmIgnition", "scfmEscape", "scfmSpread",
-                 "scfmDiagnostics")))
-out$paths$modulePath <- c("modules", "modules/scfm/modules")
+                 "scfmDiagnostics"
+)
 
-outSim <- simInitAndSpades2(out)
+outSim <- SpaDES.core::simInitAndSpades2(out)

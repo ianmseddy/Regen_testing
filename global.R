@@ -5,10 +5,17 @@ if (tryCatch(packageVersion("SpaDES.project") < "0.1.1", error = function(x) TRU
   install.packages(c("SpaDES.project", "Require", "SpaDES.core"), repos = repos)
 }
 
+studyAreaName <- "Hornepayne"
+studyTime <- 1000
+runName <- paste0(studyAreaName, studyTime)
+
 out <- SpaDES.project::setupProject(
   Restart = TRUE,
   updateRprofile = TRUE,
-  paths = list(projectPath = getwd()),
+  paths = list(projectPath = getwd(),
+               inputPath = "inputs",
+               outputPath = file.path("outputs", runName),
+               cachePath = "cache"),
   modules = c("PredictiveEcology/Biomass_borealDataPrep@development",
               "PredictiveEcology/Biomass_core@development",
               "PredictiveEcology/Biomass_regeneration@development",
@@ -21,6 +28,7 @@ out <- SpaDES.project::setupProject(
       dataYear = 2011, #will get kNN 2011 data, and NTEMS 2011 landcover
       sppEquivCol = "LandR",
       .plots = c("png"),
+      .studyAreaName = studyAreaName,
       .useCache = c(".inputObjects", "init")
     ),
     scfmDriver = list(targetN = 1000, #default is 4000 - higher targetN adds time + precision
@@ -36,7 +44,7 @@ out <- SpaDES.project::setupProject(
     LandR.verbose = TRUE #for regen messages
   ),
   packages = c('RCurl', 'XML', 'snow', 'googledrive'),
-  times = list(start = 2011, end = 2511),
+  times = list(start = 2011, end = 2011 + studyTime),
   useGit = TRUE,
   #70 years of fire should be enough to evaluate MAAB
   studyArea = {

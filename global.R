@@ -27,7 +27,7 @@ out <- SpaDES.project::setupProject(
                       # targetN would ideally be minimum 2000 - mean fire size estimates will be bad with 1000
                       .useParallelFireRegimePolys = TRUE), #assumes parallelization is an option
     scfmSpread = list(.plotInterval = 40),
-    Biomass_core = list(.plotInterval = 10)
+    Biomass_core = list(.plotInterval = 50)
   ),
   options = list(#spades.allowInitDuringSimInit = TRUE,
     spades.allowSequentialCaching = TRUE,
@@ -50,6 +50,9 @@ out <- SpaDES.project::setupProject(
   studyAreaLarge = {
     sf::st_buffer(studyArea, 2000)
   },
+  studyAreaCalibration = {
+    sf::st_buffer(studyArea, 5000)
+  },
   sppEquiv = {
     speciesInStudy <- LandR::speciesInStudyArea(studyAreaLarge,
                                                 dPath = "inputs")
@@ -67,6 +70,12 @@ out <- SpaDES.project::setupProject(
     rtm <- terra::crop(rasterToMatchLarge, studyArea)
     rtm <- terra::mask(rtm, studyArea)
     rtm
+  },
+  rasterToMatchCalibration = {
+    rtmc<- terra::rast(terra::ext(studyAreaCalibration), res = c(250, 250))
+    terra::crs(rtmc) <- terra::crs(studyAreaCalibration)
+    rtmc[] <- 1
+    rtmc <- terra::mask(rtmc, studyAreaCalibration)
   }
 )
 

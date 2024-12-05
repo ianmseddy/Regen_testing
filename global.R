@@ -3,11 +3,14 @@ repos <- c("predictiveecology.r-universe.dev", getOption("repos"))
 # Need the latest version
 if (tryCatch(packageVersion("SpaDES.project") < "0.1.1", error = function(x) TRUE)) {
   install.packages(c("SpaDES.project", "Require", "SpaDES.core"), repos = repos)
+  Require::Require("stringr")
 }
 
-studyAreaName <- "Hornepayne"
+ecoregionName <- "Lac Seul Upland"
 studyTime <- 1000
+studyAreaName <- stringr::str_replace(ecoregionName, " ", "")
 runName <- paste0(studyAreaName, studyTime)
+
 
 out <- SpaDES.project::setupProject(
   Restart = TRUE,
@@ -31,7 +34,7 @@ out <- SpaDES.project::setupProject(
       .studyAreaName = studyAreaName,
       .useCache = c(".inputObjects", "init")
     ),
-    scfmDriver = list(targetN = 1000, #default is 4000 - higher targetN adds time + precision
+    scfmDriver = list(targetN = 2000, #default is 4000 - higher targetN adds time + precision
                       # targetN would ideally be minimum 2000 - mean fire size estimates will be bad with 1000
                       .useParallelFireRegimePolys = TRUE), #assumes parallelization is an option
     scfmSpread = list(.plotInterval = 40),
@@ -50,10 +53,15 @@ out <- SpaDES.project::setupProject(
   studyArea = {
     targetCRS <- paste("+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0",
                        "+datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
-    ecod <- reproducible::prepInputs(url = "https://www.gisapplication.lrc.gov.on.ca/fmedatadownload/Packages/ECODISTR.zip",
+    if (!file.exists("inputs/ecoregion_shp.zip")) {
+      download.file(url = "https://sis.agr.gc.ca/cansis/nsdb/ecostrat/region/ecoregion_shp.zip",
+                    destfile = "inputs/ecoregion_shp.zip")
+
+    }
+    ecor <- reproducible::prepInputs(url = "https://sis.agr.gc.ca/cansis/nsdb/ecostrat/region/ecoregion_shp.zip",
                                      destinationPath = 'inputs')
-    ecod <- ecod[ecod$DIST_NAME == "Hornepayne",]
-    ecod <- sf::st_transform(ecod, targetCRS)
+    ecor <- ecor[ecor$REGION_NAM == ecoregionName,]
+    ecor <- sf::st_transform(ecor, targetCRS)
   },
   studyAreaLarge = {
     sf::st_buffer(studyArea, 2000)
@@ -84,6 +92,25 @@ out <- SpaDES.project::setupProject(
     terra::crs(rtmc) <- terra::crs(studyAreaCalibration)
     rtmc[] <- 1
     rtmc <- terra::mask(rtmc, studyAreaCalibration)
+  },
+  ecoregionLayer = {
+    if (!file.exists("inputs/ecodistrict_shp.zip")) {
+      download.file(url = "https://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip",
+                    destfile = "inputs/ecodistrict_shp.zip")
+
+    }
+    ecod <- reproducible::prepInputs(url = "https://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip",
+                       destinationPath = "inputs", to = studyAreaLarge)
+
+  },
+  fireRegimePolysCalibration = {
+    frpc <- ecoregionLayer
+    frpc$PolyID <- as.numeric(frpc$ECODISTRIC)
+    frpc
+  },
+  #we don't have to supply this but just in case
+  fireRegimePolys = {
+    frp <- reproducible::postProcess(fireRegimePolysCalibration, to = studyArea)
   }
 )
 

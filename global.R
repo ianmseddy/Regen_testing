@@ -7,7 +7,7 @@ if (tryCatch(packageVersion("SpaDES.project") < "0.1.1", error = function(x) TRU
 }
 
 ecoregionName <- "Lac Seul Upland"
-studyTime <- 750
+studyTime <- 250
 studyAreaName <- stringr::str_replace_all(ecoregionName, " ", "")
 # uniqueFts <- ""
 runName <- paste0(studyAreaName, studyTime
@@ -26,7 +26,7 @@ out <- SpaDES.project::setupProject(
   modules = c("PredictiveEcology/Biomass_borealDataPrep@development",
               "PredictiveEcology/Biomass_core@development",
               "PredictiveEcology/Biomass_regeneration@development",
-              "PredictiveEcology/Biomass_speciesParameters@manual",
+              "PredictiveEcology/Biomass_speciesParameters@development",
               "PredictiveEcology/scfm@development"
               ),
               #note scfm is a series of modules on a single git repository
@@ -38,10 +38,7 @@ out <- SpaDES.project::setupProject(
       .studyAreaName = studyAreaName,
       .useCache = c(".inputObjects", "init")
     ),
-    #modify scfm separately
-    Biomass_borealDataPrep = list(
 
-    )
     Biomass_core = list(.plotInterval = 25)
   ),
   options = list(#spades.allowInitDuringSimInit = TRUE,
@@ -100,11 +97,10 @@ out$paths$modulePath <- c(file.path("modules"),
                           file.path("modules/scfm/modules"))
 out$modules <- c("Biomass_core", "Biomass_borealDataPrep", "Biomass_regeneration",
                  "Biomass_speciesParameters",
-                 "scfmLandcoverInit", "scfmRegime", "scfmDriver",
-                 "scfmIgnition", "scfmEscape", "scfmSpread",
-                 "scfmDiagnostics"
-                 )
-out$params$scfmDriver = list(targetN = 3000, #default is 4000 - higher targetN adds time + precision
+                 "scfmDataPrep", "scfmDiagnostics",
+                 "scfmIgnition", "scfmEscape", "scfmSpread"
+)
+out$params$scfmDataPrep = list(targetN = 2000,
                   # targetN would ideally be minimum 2000 - mean fire size estimates will be bad with 1000
                   .useParallelFireRegimePolys = TRUE) #assumes parallelization is an option
 out$params$scfmSpread = list(.plotInterval = 25)

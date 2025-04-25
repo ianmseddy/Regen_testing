@@ -13,3 +13,6 @@
 [submodule "modules/Biomass_speciesParameters"]
 	path = modules/Biomass_speciesParameters
 	url = https://github.com/PredictiveEcology/Biomass_speciesParameters
+[submodule "modules/Biomass_speciesData"]
+	path = modules/Biomass_speciesData
+	url = https://github.com/PredictiveEcology/Biomass_speciesData

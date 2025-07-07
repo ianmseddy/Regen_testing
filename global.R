@@ -31,8 +31,8 @@ out <- SpaDES.project::setupProject(
     spades.recoveryMode = 1
   ),
   modules = c(
-    "PredictiveEcology/Biomass_speciesData@biomassParam",
-    "PredictiveEcology/Biomass_borealDataPrep@biomassParameterizationObj",
+    "PredictiveEcology/Biomass_speciesData@development",
+    "PredictiveEcology/Biomass_borealDataPrep@development",
     "PredictiveEcology/Biomass_core@development",
     "PredictiveEcology/Biomass_regeneration@development",
     "PredictiveEcology/Biomass_speciesParameters@development",

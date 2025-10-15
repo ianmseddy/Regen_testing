@@ -23,9 +23,7 @@ out <- SpaDES.project::setupProject(
                outputPath = file.path("outputs", runName),
                cachePath = "cache"),
   options = list(#spades.allowInitDuringSimInit = TRUE,
-    reproducible.inputPaths = "D:/Ian/Data",
-    gargle_oauth_client_type = "installed", #I think?
-    gargle_oauth_email = "ianmseddy@gmail.com",
+    "~/googledriveAuthentication.R",
     spades.allowSequentialCaching = TRUE,
     spades.moduleCodeChecks = FALSE,
     spades.recoveryMode = 1
@@ -39,10 +37,10 @@ out <- SpaDES.project::setupProject(
     "PredictiveEcology/scfm@development"
   ),
               #note scfm is a series of modules on a single git repository
-  times = list(start = 2011, end = 2011 + studyTime),
+  times = list(start = 2020, end = 2020 + studyTime),
   params = list(
     .globals = list(
-      dataYear = 2011, #will get kNN 2011 data, and NTEMS 2011 landcover
+      dataYear = 2020, #will get kNN 2011 data, and NTEMS 2011 landcover
       sppEquivCol = "LandR",
       .plots = c("png"),
       .studyAreaName = studyAreaName,
@@ -54,35 +52,32 @@ out <- SpaDES.project::setupProject(
   studyArea = {
     targetCRS <- paste("+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0",
                        "+datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
-    if (!file.exists("inputs/ecoregion_shp.zip")) {
-      download.file(url = "https://sis.agr.gc.ca/cansis/nsdb/ecostrat/region/ecoregion_shp.zip",
-                    destfile = "inputs/ecoregion_shp.zip")
-
-    }
     ecor <- reproducible::prepInputs(url = "https://sis.agr.gc.ca/cansis/nsdb/ecostrat/region/ecoregion_shp.zip",
                                      destinationPath = 'inputs', fun = "terra::vect")
     ecor <- ecor[ecor$REGION_NAM == ecoregionName,]
     ecor <- terra::project(ecor, targetCRS)
     ecor <- terra::buffer(ecor, 10000)
   },
-  studyAreaLarge = terra::buffer(studyArea, 5000),
+  studyArea_biomassParam = terra::buffer(studyArea, 5000),
   sppEquiv = {
     speciesInStudy  <- LandR::speciesInStudyArea(studyArea = studyArea, dPath = "inputs")
     species <- LandR::equivalentName(speciesInStudy$speciesList, df = LandR::sppEquivalencies_CA, "LandR")
     sppEquiv <- LandR::sppEquivalencies_CA[LandR %in% species]
     sppEquiv <- sppEquiv[KNN != "" & LANDIS_traits != ""] #avoid a bug with shore pine
   },
-  rasterToMatchLarge = {
-    rtml = terra::rast(studyAreaLarge, res = c(250, 250), vals = 1)
-    rtml = terra::mask(rtml, studyAreaLarge)
+  rasterToMatch_biomassParam = {
+    rtml = terra::rast(studyArea_biomassParam, res = c(250, 250), vals = 1)
+    rtml = terra::mask(rtml, studyArea_biomassParam)
   },
   rasterToMatch = { #FIX THIS TO USE THE NTEMS CRS
-    rtm = reproducible::postProcess(rasterToMatchLarge, to = studyArea)
+    rtm = reproducible::postProcess(rasterToMatch_biomassParam, to = studyArea)
   }
 )
+
 pineUpdate = function(species){
   species[species %in% c("Pinu_con", "Popu_tre"), shadetolerance := 1.5]
 }
+
 out$paths$modulePath <- c(file.path("modules"),
                           file.path("modules/scfm/modules"))
 out$modules <- c("Biomass_core", "Biomass_borealDataPrep", "Biomass_regeneration",

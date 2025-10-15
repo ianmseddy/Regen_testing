@@ -4,11 +4,9 @@
 .httr-oauth
 .DS_Store
 .quarto
-
 cache/cacheOutputs/
-
 inputs/
-
 cache/
-
 outputs/
+.Rprofile
+.secret
